@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Missions Dashboard</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 20px;
+      padding: 0;
+
+      /* Background image */
+      background-image: url('/static/images/mission.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: white;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Dark overlay for better text contrast */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: -1;
+    }
+
+    h1 {
+      color: #f0f0f0;
+      text-align: center;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    input, button {
+      padding: 8px 12px;
+      margin: 4px 6px 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    input:focus, button:focus {
+      outline: none;
+      border-color: #007BFF;
+      box-shadow: 0 0 5px #007BFF;
+    }
+
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #search {
+      width: 300px;
+      max-width: 100%;
+      display: block;
+      margin: 0 auto 20px auto;
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 20px;
+      border: none;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+
+    #mission-form {
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+      background: rgba(255, 255, 255, 0.85);
+      color: #333;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #mission-form input[type="hidden"] {
+      display: none;
+    }
+
+    #mission-form input[type="text"],
+    #mission-form input[type="date"],
+    #mission-form input[type="number"] {
+      flex: 1 1 200px;
+      min-width: 150px;
+    }
+
+    #mission-form button {
+      flex: 0 0 120px;
+      margin-top: 8px;
+    }
+
+    /* Transparent table styling */
+    table {
+      width: 95%;
+      max-width: 1200px;
+      margin: 0 auto 40px auto;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.1); /* very transparent white */
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
+    th {
+      background-color: rgba(0, 123, 255, 0.8);
+      color: white;
+      font-weight: 600;
+      text-shadow: 0 0 3px rgba(0,0,0,0.7);
+    }
+
+    tr:hover {
+      background-color: rgba(0, 123, 255, 0.3);
+      cursor: pointer;
+    }
+
+    button {
+      font-size: 16px;
+      border-radius: 6px;
+      padding: 6px 10px;
+      user-select: none;
+    }
+  </style>
+
+  <script>
+    async function fetchMissions() {
+      const res = await fetch('/missions');
+      const missions = await res.json();
+      const tbody = document.getElementById('mission-body');
+      tbody.innerHTML = '';
+      missions.forEach(m => {
+        const row = `
+          <tr>
+            <td>${m.mission_id}</td>
+            <td>${m.name}</td>
+            <td>${m.launch_date ? new Date(m.launch_date).toISOString().split('T')[0] : ''}</td>
+            <td>${m.agency_id || ''}</td>
+            <td>${m.destination_id || ''}</td>
+            <td>${m.spacecraft_id || ''}</td>
+            <td>${m.mission_status || ''}</td>
+            <td>${m.mission_type || ''}</td>
+            <td>
+              <button onclick='editMission(${JSON.stringify(m)})'>✏️</button>
+              <button onclick='deleteMission(${m.mission_id})'>🗑️</button>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function addOrUpdateMission() {
+      const id = document.getElementById('mission_id').value;
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/missions/${id}` : '/missions';
+
+      const data = {
+        name: document.getElementById('name').value,
+        launch_date: document.getElementById('launch_date').value,
+        agency_id: parseInt(document.getElementById('agency_id').value) || null,
+        destination_id: parseInt(document.getElementById('destination_id').value) || null,
+        spacecraft_id: parseInt(document.getElementById('spacecraft_id').value) || null,
+        mission_status: document.getElementById('mission_status').value,
+        mission_type: document.getElementById('mission_type').value
+      };
+
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      document.getElementById('mission-form').reset();
+      document.getElementById('mission_id').value = '';
+      fetchMissions();
+    }
+
+    function editMission(m) {
+      document.getElementById('mission_id').value = m.mission_id;
+      document.getElementById('name').value = m.name;
+      document.getElementById('launch_date').value = m.launch_date ? new Date(m.launch_date).toISOString().split('T')[0] : '';
+      document.getElementById('agency_id').value = m.agency_id || '';
+      document.getElementById('destination_id').value = m.destination_id || '';
+      document.getElementById('spacecraft_id').value = m.spacecraft_id || '';
+      document.getElementById('mission_status').value = m.mission_status || '';
+      document.getElementById('mission_type').value = m.mission_type || '';
+    }
+
+    async function deleteMission(id) {
+      if (!confirm('Are you sure?')) return;
+      await fetch(`/missions/${id}`, { method: 'DELETE' });
+      fetchMissions();
+    }
+
+    async function searchMissions() {
+      const query = document.getElementById('search').value;
+      const res = await fetch(`/missions/search?q=${encodeURIComponent(query)}`);
+      const missions = await res.json();
+      const tbody = document.getElementById('mission-body');
+      tbody.innerHTML = '';
+      missions.forEach(m => {
+        const row = `
+          <tr>
+            <td>${m.mission_id}</td>
+            <td>${m.name}</td>
+            <td>${m.launch_date ? new Date(m.launch_date).toISOString().split('T')[0] : ''}</td>
+            <td>${m.agency_id || ''}</td>
+            <td>${m.destination_id || ''}</td>
+            <td>${m.spacecraft_id || ''}</td>
+            <td>${m.mission_status || ''}</td>
+            <td>${m.mission_type || ''}</td>
+            <td>
+              <button onclick='editMission(${JSON.stringify(m)})'>✏️</button>
+              <button onclick='deleteMission(${m.mission_id})'>🗑️</button>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    window.onload = fetchMissions;
+  </script>
+</head>
+<body>
+  <h1>Missions Dashboard</h1>
+
+  <input type="text" id="search" placeholder="Search by name..." oninput="searchMissions()" />
+
+  <form id="mission-form" onsubmit="event.preventDefault(); addOrUpdateMission();">
+    <input type="hidden" id="mission_id" />
+    <input type="text" id="name" placeholder="Mission Name" required />
+    <input type="date" id="launch_date" placeholder="Launch Date" />
+    <input type="number" id="agency_id" placeholder="Agency ID" />
+    <input type="number" id="destination_id" placeholder="Destination ID" />
+    <input type="number" id="spacecraft_id" placeholder="Spacecraft ID" />
+    <input type="text" id="mission_status" placeholder="Status (e.g. success)" />
+    <input type="text" id="mission_type" placeholder="Type (e.g. manned)" />
+    <button type="submit">Save</button>
+  </form>
+
+  <table border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Launch Date</th><th>Agency</th><th>Destination</th><th>Spacecraft</th><th>Status</th><th>Type</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="mission-body"></tbody>
+  </table>
+</body>
+</html>

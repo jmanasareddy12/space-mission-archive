@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Astronauts Dashboard</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    color: #fff;
+    background: url('static/images/astronaut.jpg') no-repeat center center fixed;
+    background-size: cover;
+    position: relative;
+    min-height: 100vh;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: -1;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    background-color: rgba(0,0,0,0.5);
+    padding: 20px 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+  }
+  h1, h2 {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 8px #000;
+  }
+  label {
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  input[type="text"], input[type="date"], input[type="number"], select {
+    padding: 8px 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    margin: 6px 8px 12px 0;
+    width: 220px;
+    box-shadow: 0 0 8px #007BFF;
+  }
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    margin: 4px;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  .filters, form {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+  }
+  thead {
+    background-color: rgba(0, 123, 255, 0.7);
+  }
+  th, td {
+    padding: 14px 18px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+  tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.3);
+  }
+</style>
+<script>
+async function fetchDestinations() {
+  const res = await fetch('/destinations');
+  const destinations = await res.json();
+  const select = document.getElementById('destinationFilter');
+  select.innerHTML = '<option value="all">All Destinations</option>';
+  destinations.forEach(d => {
+    const option = document.createElement('option');
+    option.value = d.destination_id;
+    option.textContent = d.name;
+    select.appendChild(option);
+  });
+}
+
+async function fetchAstronauts() {
+  const searchQuery = document.getElementById('search').value.trim();
+  const destinationId = document.getElementById('destinationFilter').value;
+  let url = `/astronauts/filter?q=${encodeURIComponent(searchQuery)}`;
+  if (destinationId !== 'all') url += `&destination_id=${destinationId}`;
+  const res = await fetch(url);
+  const astronauts = await res.json();
+  const tbody = document.getElementById('astronauts-body');
+  tbody.innerHTML = '';
+  astronauts.forEach(a => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${a.astronaut_id}</td>
+      <td>${a.name}</td>
+      <td>${a.nationality || ''}</td>
+      <td>${a.date_of_birth ? new Date(a.date_of_birth).toISOString().split('T')[0] : ''}</td>
+      <td>${a.agency_id || ''}</td>
+      <td>${a.number_of_missions || 0}</td>
+      <td>
+        <button onclick='editAstronaut(${JSON.stringify(a)})'>✏️</button>
+        <button onclick='deleteAstronaut(${a.astronaut_id})'>🗑️</button>
+      </td>`;
+    tbody.appendChild(row);
+  });
+}
+
+async function saveAstronaut() {
+  const id = document.getElementById('astronaut_id').value;
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? `/astronauts/${id}` : '/astronauts';
+  const data = {
+    name: document.getElementById('name').value,
+    nationality: document.getElementById('nationality').value,
+    date_of_birth: document.getElementById('date_of_birth').value,
+    agency_id: document.getElementById('agency_id').value,
+    number_of_missions: document.getElementById('number_of_missions').value
+  };
+  await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  document.getElementById('astronaut-form').reset();
+  document.getElementById('astronaut_id').value = '';
+  fetchAstronauts();
+}
+
+function editAstronaut(a) {
+  document.getElementById('astronaut_id').value = a.astronaut_id;
+  document.getElementById('name').value = a.name;
+  document.getElementById('nationality').value = a.nationality || '';
+  document.getElementById('date_of_birth').value = a.date_of_birth || '';
+  document.getElementById('agency_id').value = a.agency_id || '';
+  document.getElementById('number_of_missions').value = a.number_of_missions || '';
+}
+
+async function deleteAstronaut(id) {
+  if (confirm('Are you sure you want to delete this astronaut?')) {
+    await fetch(`/astronauts/${id}`, { method: 'DELETE' });
+    fetchAstronauts();
+  }
+}
+
+window.onload = () => {
+  fetchDestinations().then(fetchAstronauts);
+  document.getElementById('search').addEventListener('input', fetchAstronauts);
+  document.getElementById('destinationFilter').addEventListener('change', fetchAstronauts);
+};
+</script>
+</head>
+<body>
+<div class="container">
+  <h1>Astronauts Dashboard</h1>
+  <div class="filters">
+    <label for="search">Search by Name:</label>
+    <input type="text" id="search" placeholder="Enter astronaut name..." />
+    <label for="destinationFilter">Filter by Destination:</label>
+    <select id="destinationFilter"></select>
+  </div>
+
+  <h2>Add / Update Astronaut</h2>
+  <form id="astronaut-form" onsubmit="event.preventDefault(); saveAstronaut();">
+    <input type="hidden" id="astronaut_id">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="text" id="nationality" placeholder="Nationality">
+    <input type="date" id="date_of_birth">
+    <input type="number" id="agency_id" placeholder="Agency ID">
+    <input type="number" id="number_of_missions" placeholder="Missions">
+    <button type="submit">Save</button>
+  </form>
+
+  <table border="1" cellpadding="8" cellspacing="0" aria-label="Astronauts Data Table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Nationality</th>
+        <th>Date of Birth</th>
+        <th>Agency ID</th>
+        <th>Number of Missions</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="astronauts-body"></tbody>
+  </table>
+</div>
+</body>
+</html>

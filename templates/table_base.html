@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Space Mission Archive</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      color: white;
+      background: transparent;
+      overflow-x: hidden;
+    }
+
+    video.bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -10;
+      opacity: 0;
+      transition: opacity 1.5s ease-in-out;
+    }
+
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #ffd700;
+    }
+
+    main {
+      padding: 100px 20px 20px 20px;
+      text-align: center;
+      z-index: 5;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Videos -->
+  <video id="video1" class="bg-video" autoplay muted playsinline></video>
+  <video id="video2" class="bg-video" autoplay muted playsinline></video>
+
+  <!-- Header and Navigation -->
+  <header>
+    <h1>Welcome to the Archive</h1>
+    <nav>
+      <a href="/missions-page">Missions</a>
+      <a href="/astronauts-page">Astronauts</a>
+      <a href="/spacecrafts-page">Spacecraft</a>
+      <a href="/destinations-page">Destinations</a>
+      <a href="/agencies-page">Agencies</a>
+      <a href="/crew-page">Mission Crew</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="welcome">
+      <h2>🚀 Space Mission Archive</h2>
+      <p>Discover the wonders of space missions and exploration!</p>
+    </section>
+  </main>
+
+  <!-- JavaScript to Swap Videos -->
+  <script>
+   document.addEventListener('DOMContentLoaded', () => {
+  const videoList = [
+    "{{ url_for('static', filename='videos/video1.mp4') }}",
+    "{{ url_for('static', filename='videos/video2.mp4') }}",
+    "{{ url_for('static', filename='videos/video3.mp4') }}",
+    "{{ url_for('static', filename='videos/video4.mp4') }}"
+  ];
+
+  let current = Math.floor(Math.random() * videoList.length);
+  const video1 = document.getElementById('video1');
+  const video2 = document.getElementById('video2');
+  let isVideo1Active = true;
+
+  function getNextIndex(index) {
+    return (index + 1) % videoList.length;
+  }
+
+  function fadeSwapVideos() {
+    const active = isVideo1Active ? video1 : video2;
+    const next = isVideo1Active ? video2 : video1;
+
+    current = getNextIndex(current);
+    next.src = videoList[current];
+    next.load();
+
+    next.onloadeddata = () => {
+      next.play();
+      active.style.opacity = 0;
+      next.style.opacity = 1;
+      isVideo1Active = !isVideo1Active;
+    };
+  }
+
+  // Initial setup
+  video1.src = videoList[current];
+  video1.load();
+  video1.onloadeddata = () => {
+    video1.style.opacity = 1;
+    video1.play();
+  };
+
+  video1.addEventListener('ended', fadeSwapVideos);
+  video2.addEventListener('ended', fadeSwapVideos);
+});
+
+  </script>
+
+</body>
+</html>

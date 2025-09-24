@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Space Missions DB - Tables</title>
+</head>
+<body>
+    <h1>Available Tables</h1>
+    <ul>
+        {% for table in tables %}
+        <li><a href="{{ url_for('show_table', table_name=table) }}">{{ table.capitalize() }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

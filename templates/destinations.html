@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Destinations Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('/static/images/destination.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            margin: 0;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        input[type="text"]#search {
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3c8dbc;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #337ab7;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: rgba(0, 0, 0, 0.6); /* semi-transparent table */
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            color: #f0f0f0;
+        }
+
+        thead {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #destination-form {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        #search {
+            margin-bottom: 20px;
+        }
+    </style>
+    <script>
+        async function fetchDestinations() {
+            const res = await fetch('/destinations');
+            const destinations = await res.json();
+            const tbody = document.getElementById('destination-body');
+            tbody.innerHTML = '';
+            destinations.forEach(dest => {
+                const row = `
+                    <tr>
+                        <td>${dest.destination_id}</td>
+                        <td>${dest.name}</td>
+                        <td>${dest.type || ''}</td>
+                        <td>${dest.distance_from_earth_km !== null ? dest.distance_from_earth_km : ''}</td>
+                        <td>
+                            <button onclick='editDestination(${JSON.stringify(dest)})'>✏️</button>
+                            <button onclick='deleteDestination(${dest.destination_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function addOrUpdateDestination() {
+            const id = document.getElementById('destination_id').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/destinations/${id}` : '/destinations';
+
+            const data = {
+                name: document.getElementById('name').value,
+                type: document.getElementById('type').value,
+                distance_from_earth_km: parseInt(document.getElementById('distance_from_earth_km').value) || null
+            };
+
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            document.getElementById('destination-form').reset();
+            document.getElementById('destination_id').value = '';
+            fetchDestinations();
+        }
+
+        function editDestination(dest) {
+            document.getElementById('destination_id').value = dest.destination_id;
+            document.getElementById('name').value = dest.name;
+            document.getElementById('type').value = dest.type || '';
+            document.getElementById('distance_from_earth_km').value = dest.distance_from_earth_km !== null ? dest.distance_from_earth_km : '';
+        }
+
+        async function deleteDestination(id) {
+            if (!confirm('Are you sure?')) return;
+            await fetch(`/destinations/${id}`, { method: 'DELETE' });
+            fetchDestinations();
+        }
+
+        async function searchDestinations() {
+            const query = document.getElementById('search').value;
+            const res = await fetch(`/destinations/search?q=${encodeURIComponent(query)}`);
+            const destinations = await res.json();
+            const tbody = document.getElementById('destination-body');
+            tbody.innerHTML = '';
+            destinations.forEach(dest => {
+                const row = `
+                    <tr>
+                        <td>${dest.destination_id}</td>
+                        <td>${dest.name}</td>
+                        <td>${dest.type || ''}</td>
+                        <td>${dest.distance_from_earth_km !== null ? dest.distance_from_earth_km : ''}</td>
+                        <td>
+                            <button onclick='editDestination(${JSON.stringify(dest)})'>✏️</button>
+                            <button onclick='deleteDestination(${dest.destination_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        window.onload = fetchDestinations;
+    </script>
+</head>
+<body>
+    <h1>🌌 Destinations Dashboard</h1>
+
+    <input type="text" id="search" placeholder="Search by name..." oninput="searchDestinations()" />
+
+    <form id="destination-form" onsubmit="event.preventDefault(); addOrUpdateDestination();">
+        <input type="hidden" id="destination_id">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="type" placeholder="Type">
+        <input type="number" id="distance_from_earth_km" placeholder="Distance from Earth (km)" min="0">
+        <button type="submit">💾 Save</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Distance from Earth (km)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="destination-body"></tbody>
+    </table>
+</body>
+</html>

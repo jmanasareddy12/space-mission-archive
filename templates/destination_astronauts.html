@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Astronauts by Destination</title>
+    <script>
+        async function loadDestinations() {
+            const res = await fetch('/destinations');
+            const destinations = await res.json();
+            const select = document.getElementById('destination-select');
+            select.innerHTML = '<option value="">Select Destination</option>';
+            destinations.forEach(dest => {
+                const option = document.createElement('option');
+                option.value = dest.destination_id;
+                option.textContent = dest.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadAstronautsByDestination() {
+            const destinationId = document.getElementById('destination-select').value;
+            if (!destinationId) return;
+
+            const res = await fetch(`/astronauts/by-destination/${destinationId}`);
+            if (!res.ok) {
+                document.getElementById('astronaut-list').innerHTML = `<p>Error loading astronauts</p>`;
+                return;
+            }
+
+            const astronauts = await res.json();
+            const list = document.getElementById('astronaut-list');
+            list.innerHTML = '';
+            if (astronauts.length === 0) {
+                list.innerHTML = '<p>No astronauts for this destination.</p>';
+            } else {
+                astronauts.forEach(a => {
+                    const li = document.createElement('li');
+                    li.textContent = `${a.name} (${a.nationality})`;
+                    list.appendChild(li);
+                });
+            }
+        }
+
+        window.onload = loadDestinations;
+    </script>
+</head>
+<body>
+    <h1>Astronauts by Destination</h1>
+
+    <label for="destination-select">Choose a Destination:</label>
+    <select id="destination-select" onchange="loadAstronautsByDestination()">
+        <!-- Populated by JS -->
+    </select>
+
+    <h2>Astronauts:</h2>
+    <ul id="astronaut-list"></ul>
+</body>
+</html>

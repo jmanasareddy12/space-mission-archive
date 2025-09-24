@@ -1,0 +1,15 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head><title>Tables</title></head>
+<body>
+    <h1>Tables</h1>
+    <ul>
+        {% for table in tables %}
+            {% if table in ['missions', 'agencies', 'spacecrafts', 'astronauts', 'destinations','mission_crew'] %}
+            <li><a href="{{ url_for('show_table', table_name=table) }}">{{ table.capitalize() }}</a></li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+</body>
+</html>

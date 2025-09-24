@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agencies Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('/static/images/agency.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            margin: 0;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        input[type="text"], input[type="number"], input[type="url"] {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        input[type="text"]#search {
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3c8dbc;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #337ab7;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: rgba(0, 0, 0, 0.6); /* semi-transparent */
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            color: #f0f0f0;
+        }
+
+        thead {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #agency-form {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        #search {
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #7ecfff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script>
+        async function fetchAgencies() {
+            const res = await fetch('/agencies');
+            const agencies = await res.json();
+            const tbody = document.getElementById('agency-body');
+            tbody.innerHTML = '';
+            agencies.forEach(agency => {
+                const row = `
+                    <tr>
+                        <td>${agency.agency_id}</td>
+                        <td>${agency.name}</td>
+                        <td>${agency.country}</td>
+                        <td>${agency.founded_year}</td>
+                        <td>${agency.headquarters}</td>
+                        <td><a href="${agency.website}" target="_blank">Visit</a></td>
+                        <td>
+                            <button onclick='editAgency(${JSON.stringify(agency)})'>✏️</button>
+                            <button onclick='deleteAgency(${agency.agency_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function addOrUpdateAgency() {
+            const id = document.getElementById('agency_id').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/agencies/${id}` : '/agencies';
+
+            const data = {
+                name: document.getElementById('name').value,
+                country: document.getElementById('country').value,
+                founded_year: document.getElementById('founded_year').value,
+                headquarters: document.getElementById('headquarters').value,
+                website: document.getElementById('website').value
+            };
+
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            document.getElementById('agency-form').reset();
+            document.getElementById('agency_id').value = '';
+            fetchAgencies();
+        }
+
+        function editAgency(agency) {
+            document.getElementById('agency_id').value = agency.agency_id;
+            document.getElementById('name').value = agency.name;
+            document.getElementById('country').value = agency.country;
+            document.getElementById('founded_year').value = agency.founded_year;
+            document.getElementById('headquarters').value = agency.headquarters;
+            document.getElementById('website').value = agency.website;
+        }
+            async function performAggregate() {
+        const option = document.getElementById('aggregate-option').value;
+        if (!option) return;
+
+        const res = await fetch(`/agencies/aggregate?type=${option}`);
+        const data = await res.json();
+
+        let resultText = '';
+
+        switch (option) {
+            case 'count':
+                resultText = `Total Agencies: ${data.total}`;
+                break;
+            case 'avg_year':
+                resultText = `Average Founded Year: ${data.average}`;
+                break;
+            case 'oldest':
+                resultText = `Oldest Agency: ${data.name} (${data.founded_year})`;
+                break;
+            case 'newest':
+                resultText = `Newest Agency: ${data.name} (${data.founded_year})`;
+                break;
+            case 'country_count':
+                resultText = 'Agencies per Country:<br>' + data.map(d => `${d.country}: ${d.total}`).join('<br>');
+                break;
+        }
+
+        document.getElementById('aggregate-result').innerHTML = resultText;
+    }
+
+        async function deleteAgency(id) {
+            if (!confirm('Are you sure?')) return;
+            await fetch(`/agencies/${id}`, { method: 'DELETE' });
+            fetchAgencies();
+        }
+
+        async function searchAgencies() {
+            const query = document.getElementById('search').value;
+            const res = await fetch(`/agencies/search?q=${encodeURIComponent(query)}`);
+            const agencies = await res.json();
+            const tbody = document.getElementById('agency-body');
+            tbody.innerHTML = '';
+            agencies.forEach(agency => {
+                const row = `
+                    <tr>
+                        <td>${agency.agency_id}</td>
+                        <td>${agency.name}</td>
+                        <td>${agency.country}</td>
+                        <td>${agency.founded_year}</td>
+                        <td>${agency.headquarters}</td>
+                        <td><a href="${agency.website}" target="_blank">Visit</a></td>
+                        <td>
+                            <button onclick='editAgency(${JSON.stringify(agency)})'>✏️</button>
+                            <button onclick='deleteAgency(${agency.agency_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        window.onload = fetchAgencies;
+    </script>
+</head>
+<body>
+    <h1>🚀 Agencies Dashboard</h1>
+
+    <input type="text" id="search" placeholder="Search by name..." oninput="searchAgencies()" />
+    <div style="margin-top: 20px;">
+    <select id="aggregate-option">
+        <option value="">-- Aggregate Function --</option>
+        <option value="count">Total Number of Agencies</option>
+        <option value="avg_year">Average Founded Year</option>
+        <option value="oldest">Oldest Agency</option>
+        <option value="newest">Newest Agency</option>
+        <option value="country_count">Agencies per Country</option>
+    </select>
+    <button onclick="performAggregate()">📊 Run</button>
+</div>
+
+<div id="aggregate-result" style="margin-top: 10px; font-weight: bold;"></div>
+
+    <form id="agency-form" onsubmit="event.preventDefault(); addOrUpdateAgency();">
+        <input type="hidden" id="agency_id">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="country" placeholder="Country">
+        <input type="number" id="founded_year" placeholder="Founded Year">
+        <input type="text" id="headquarters" placeholder="Headquarters">
+        <input type="url" id="website" placeholder="Website">
+        <button type="submit">💾 Save</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Country</th><th>Founded</th>
+                <th>HQ</th><th>Website</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="agency-body"></tbody>
+    </table>
+</body>
+</html>

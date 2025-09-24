@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mission Crew</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url("/static/images/crew.jpg") no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+        }
+
+        h1 {
+            text-align: center;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 4px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 150px;
+        }
+
+        button {
+            background-color: #2980b9;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #3498db;
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        th {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        #search {
+            width: 300px;
+            font-size: 16px;
+        }
+    </style>
+    <script>
+        async function fetchMissionCrew() {
+            const res = await fetch('/mission_crew');
+            const crew = await res.json();
+            const tbody = document.getElementById('missioncrew-body');
+            tbody.innerHTML = '';
+            crew.forEach(mc => {
+                const row = `
+                    <tr>
+                        <td>${mc.mission_id}</td>
+                        <td>${mc.astronaut_id}</td>
+                        <td>${mc.role || ''}</td>
+                        <td>
+                            <button onclick='editMissionCrew(${JSON.stringify(mc)})'>✏️</button>
+                            <button onclick='deleteMissionCrew(${mc.mission_id}, ${mc.astronaut_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function addOrUpdateMissionCrew() {
+            const mission_id = document.getElementById('mission_id').value;
+            const astronaut_id = document.getElementById('astronaut_id').value;
+            const role = document.getElementById('role').value;
+
+            if (!mission_id || !astronaut_id) {
+                alert('Mission ID and Astronaut ID are required');
+                return;
+            }
+
+            const data = { role };
+            const isEdit = document.getElementById('edit_mode').value === 'true';
+
+            let url, method;
+            if (isEdit) {
+                url = `/mission_crew/${mission_id}/${astronaut_id}`;
+                method = 'PUT';
+            } else {
+                url = '/mission_crew';
+                method = 'POST';
+                data.mission_id = mission_id;
+                data.astronaut_id = astronaut_id;
+            }
+
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            document.getElementById('missioncrew-form').reset();
+            document.getElementById('edit_mode').value = 'false';
+            fetchMissionCrew();
+        }
+
+        function editMissionCrew(mc) {
+            document.getElementById('mission_id').value = mc.mission_id;
+            document.getElementById('astronaut_id').value = mc.astronaut_id;
+            document.getElementById('role').value = mc.role || '';
+            document.getElementById('mission_id').disabled = true;
+            document.getElementById('astronaut_id').disabled = true;
+            document.getElementById('edit_mode').value = 'true';
+        }
+
+        async function deleteMissionCrew(mission_id, astronaut_id) {
+            if (!confirm('Are you sure?')) return;
+            await fetch(`/mission_crew/${mission_id}/${astronaut_id}`, { method: 'DELETE' });
+            fetchMissionCrew();
+        }
+
+        async function searchMissionCrew() {
+            const query = document.getElementById('search').value;
+            const res = await fetch(`/mission_crew/search?q=${encodeURIComponent(query)}`);
+            const crew = await res.json();
+            const tbody = document.getElementById('missioncrew-body');
+            tbody.innerHTML = '';
+            crew.forEach(mc => {
+                const row = `
+                    <tr>
+                        <td>${mc.mission_id}</td>
+                        <td>${mc.astronaut_id}</td>
+                        <td>${mc.role || ''}</td>
+                        <td>
+                            <button onclick='editMissionCrew(${JSON.stringify(mc)})'>✏️</button>
+                            <button onclick='deleteMissionCrew(${mc.mission_id}, ${mc.astronaut_id})'>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('missioncrew-form').reset();
+            document.getElementById('edit_mode').value = 'false';
+            document.getElementById('mission_id').disabled = false;
+            document.getElementById('astronaut_id').disabled = false;
+        }
+
+        window.onload = () => {
+            fetchMissionCrew();
+            document.getElementById('reset-btn').onclick = resetForm;
+        };
+    </script>
+</head>
+<body>
+    <h1>Mission Crew Dashboard</h1>
+
+    <input type="text" id="search" placeholder="Search by role..." oninput="searchMissionCrew()" />
+
+    <form id="missioncrew-form" onsubmit="event.preventDefault(); addOrUpdateMissionCrew();">
+        <input type="hidden" id="edit_mode" value="false" />
+        <input type="number" id="mission_id" placeholder="Mission ID" required />
+        <input type="number" id="astronaut_id" placeholder="Astronaut ID" required />
+        <input type="text" id="role" placeholder="Role" />
+        <button type="submit">Save</button>
+        <button type="button" id="reset-btn">Reset</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Mission ID</th>
+                <th>Astronaut ID</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="missioncrew-body"></tbody>
+    </table>
+</body>
+</html>
