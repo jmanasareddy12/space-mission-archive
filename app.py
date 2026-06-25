@@ -151,5 +151,10 @@ def destination_astronauts_page():
 def mission_crew_page():
     return render_template('mission_crew.html')
 
-if __name__ == '__main__':
-    app.run(debug=True)
+import os
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000))
+    )
