@@ -1,4 +1,5 @@
 import os
+import certifi
 import mysql.connector
 
 def get_db_connection():
@@ -8,7 +9,7 @@ def get_db_connection():
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASSWORD"],
         database=os.environ["DB_NAME"],
-        ssl_ca="isrgrootx1.pem",
+        ssl_ca=certifi.where(),
         ssl_verify_cert=True,
         ssl_verify_identity=True
     )
